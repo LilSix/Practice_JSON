@@ -35,6 +35,7 @@ NSURLSessionDownloadDelegate> {
                                                         delegateQueue:[NSOperationQueue mainQueue]];
     NSURLSessionDownloadTask *urlSessionDownloadTask = [urlSession downloadTaskWithURL:url];
     [urlSessionDownloadTask resume];
+    NSLog(@"Init download...");
 }
 
 - (void)didReceiveMemoryWarning {
@@ -82,17 +83,53 @@ NSURLSessionDownloadDelegate> {
       downloadTask:(NSURLSessionDownloadTask *)downloadTask
 didFinishDownloadingToURL:(NSURL *)location {
     
-    NSData *data = [NSData dataWithContentsOfURL:location];
-    NSDictionary *dictionary = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingMutableContainers error:nil];
+        @try {
+            
+            NSData *data = [NSData dataWithContentsOfURL:location];
+            NSDictionary *dictionary = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingMutableContainers error:nil];
+            
+            for (NSDictionary *dictionaryResults in dictionary[@"result"][@"results"]) {
+                NSString *stringName = [dictionaryResults objectForKey:@"A_Name_Ch"];
+                [mutableArray addObject:stringName];
+            }
+            
+            NSLog(@"Download...");
+        } @catch (NSException *exception) {
+            
+            [session finishTasksAndInvalidate];
+            [downloadTask cancel];
+            
+            UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"Alert"
+                                                                                     message:@"No data to display."
+                                                                              preferredStyle:UIAlertControllerStyleAlert];
+            UIAlertAction *alertAction = [UIAlertAction actionWithTitle:@"OK"
+                                                                  style:UIAlertActionStyleDefault
+                                                                handler:nil];
+            [alertController addAction:alertAction];
+            
+            [self presentViewController:alertController animated:YES completion:nil];
+            NSLog(@"Caught: %@, %@", [exception name], [exception reason]);
+        } @finally {
+            
+            [session finishTasksAndInvalidate];
+            [downloadTask cancel];
+            [_tableView reloadData];
+        
+            NSLog(@"Download compelete.");
+        }
     
-    for (NSDictionary *dictionaryResults in dictionary[@"result"][@"results"]) {
-        NSString *stringName = [dictionaryResults objectForKey:@"A_Name_Ch"];
-        [mutableArray addObject:stringName];
-    }
     
-    [session finishTasksAndInvalidate];
-    [downloadTask cancel];
-    [_tableView reloadData];
+//    NSData *data = [NSData dataWithContentsOfURL:location];
+//    NSDictionary *dictionary = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingMutableContainers error:nil];
+//    
+//    for (NSDictionary *dictionaryResults in dictionary[@"result"][@"results"]) {
+//        NSString *stringName = [dictionaryResults objectForKey:@"A_Name_Ch"];
+//        [mutableArray addObject:stringName];
+//    }
+//    
+//    [session finishTasksAndInvalidate];
+//    [downloadTask cancel];
+//    [_tableView reloadData];
 }
 
 @end
